@@ -29,8 +29,9 @@ void exitSig(int sig){
 int main (int argc, char* argv[])
 {
     
-    
+    // for CTRL + c
     signal(SIGINT, exitSig);
+    // for X out of terminal
     signal(SIGHUP, exitSig);
     
     
