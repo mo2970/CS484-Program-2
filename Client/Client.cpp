@@ -26,20 +26,38 @@ void exitSig(int sig){
   clientRunFlag = 0; 
 }
 
-int main (int argc, char* argv[])
+int main (int argInt, char* argchar[])
 {
+    int socketNumber = socket(AF_INET, SOCK_STREAM, 0);
+    int portNumber = atoi(argchar[2]);
+    
+    struct sockaddr_in svrAddress;
+    struct hostent *serverHost = gethostbyname(argchar[1]);
+
+    
+    if(argInt < 2 || socketNumber < 0 || serverHost == NULL){
+        cerr << "Client initialization failed" << endl;
+        return 0;
+    }
+
+    
+    bzero((char *) &svrAddress, sizeof(svrAddress));
+    svrAddress.sin_family = AF_INET;
+    
+    bcopy((char *) serverHost -> h_addr, (char *) &svrAddress.sin_addr.s_addr, serverHost -> h_length);
+    
+    svrAddress.sin_port = htons(portNumber);
+    
     
     // for CTRL + c
     signal(SIGINT, exitSig);
     // for X out of terminal
     signal(SIGHUP, exitSig);
     
-    
     while(clientRunFlag)
     {
         
     }
-    
-    
+   
     return 0;
 }
