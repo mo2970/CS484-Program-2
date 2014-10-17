@@ -1,21 +1,15 @@
-#include <string.h>
-#include <cstring>
-#include <unistd.h>
 #include <stdio.h>
-#include <netdb.h>
-#include <sys/types.h>
+#include <iostream>
+#include <string.h>
+#include <strings.h>
+#include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <iomanip>
-#include <strings.h>
-#include <stdlib.h>
-#include <string>
-#include <time.h>
-#include <vector>
+#include <unistd.h>
+#include <fcntl.h>
 #include <signal.h>
+
+#define PORT 2970
 
 using namespace std;
 
@@ -28,36 +22,73 @@ void exitSig(int sig){
 
 int main (int argInt, char* argchar[])
 {
-    int socketNumber = socket(AF_INET, SOCK_STREAM, 0);
-    int portNumber = atoi(argchar[2]);
+    char userName[] = {'m','o','2','9','7','0'};
+    sockaddr_in myAddr;
+    const sockaddr &myAddrP = (sockaddr& )myAddr; //why this?!
+    int socketID = socket(AF_INET,SOCK_STREAM,0);
     
-    struct sockaddr_in svrAddress;
-    struct hostent *serverHost = gethostbyname(argchar[1]);
-
-    
-    if(argInt < 2 || socketNumber < 0 || serverHost == NULL){
+    if(socketID < 0){
         cerr << "Client initialization failed" << endl;
         return 0;
     }
-
-    
-    bzero((char *) &svrAddress, sizeof(svrAddress));
-    svrAddress.sin_family = AF_INET;
-    
-    bcopy((char *) serverHost -> h_addr, (char *) &svrAddress.sin_addr.s_addr, serverHost -> h_length);
-    
-    svrAddress.sin_port = htons(portNumber);
-    
     
     // for CTRL + c
     signal(SIGINT, exitSig);
     // for X out of terminal
     signal(SIGHUP, exitSig);
     
+    bzero(&myAddr,sizeof(myAddr)); //bzero?
+    myAddr.sin_family = AF_INET;
+    inet_pton(AF_INET,"127.0.0.1",&myAddr.sin_addr);
+    myAddr.sin_port = htons(PORT);
+
+    connect(socketID, &myAddrP, sizeof(myAddr));
+
+    //Send username
+    int result = send(socketID,userName, strlen(userName), 0);
+    if(result < 0)
+	cout<<"Send failed :("<<endl;
+
+    char buff[256];
+    result = recv(socketID,buff,256,0);
+	
+    int userCount = 1;
+    cout<<"Users online:"<<endl<<" 1:";
+    for(int i=2;i<result-1;i++)
+    {
+    	if(buff[i] == ';')
+    	{
+    		userCount++;
+		cout<<endl<<" "<<userCount<<":";
+	}
+	else
+		cout<<buff[i];
+    }
+    cout<<endl;
+
+	
+    cin>>userCount;
+    send(socketID,"C:0",3,0);
+	
+    int flags = fcntl(socketID, F_GETFL, 0);
+    fcntl(socketID, F_SETFL, flags | O_NONBLOCK);
+
+    //chat loop
     while(clientRunFlag)
     {
-        
+	cin.getline(buff,256);
+	if(buff[0] =='S')
+		send(socketID,buff,256,0);
+
+	//needs to be a thread
+	result = recv(socketID,buff,256,0);
+	if(result > 0)
+	{
+		for(int i=0;i<254;i++)
+			buff[i] = buff[i+2];
+		cout<<buff<<endl;
+	}
     }
-   
+    close(socketID);   
     return 0;
 }
