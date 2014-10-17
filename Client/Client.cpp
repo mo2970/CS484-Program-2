@@ -24,7 +24,6 @@ int main (int argInt, char* argchar[])
 {
     char userName[] = {'m','o','2','9','7','0'};
     sockaddr_in myAddr;
-    const sockaddr &myAddrP = (sockaddr& )myAddr; //why this?!
     int socketID = socket(AF_INET,SOCK_STREAM,0);
     
     if(socketID < 0){
@@ -37,12 +36,11 @@ int main (int argInt, char* argchar[])
     // for X out of terminal
     signal(SIGHUP, exitSig);
     
-    bzero(&myAddr,sizeof(myAddr)); //bzero?
     myAddr.sin_family = AF_INET;
     inet_pton(AF_INET,"127.0.0.1",&myAddr.sin_addr);
     myAddr.sin_port = htons(PORT);
 
-    connect(socketID, &myAddrP, sizeof(myAddr));
+    connect(socketID,(sockaddr *)&myAddr, sizeof(myAddr));
 
     //Send username
     int result = send(socketID,userName, strlen(userName), 0);
